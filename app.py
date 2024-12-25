@@ -381,49 +381,28 @@ def send_otp(email):
 
 
 # Route for user registration
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        mobile = request.form.get('mobile')
-        guardianNum=request.form.get('guardianNum')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        otp = request.form.get('otp')
+    data = request.json  # Expecting JSON data
+    username = data.get('username')
+    mobile = data.get('mobile')
+    email = data.get('email')
+    password = data.get('password')
 
-        if not username or not email or not password:
-            return jsonify({'success': False, 'message': 'All fields are required!'})
+    if not username or not email or not password:
+        return jsonify({'success': False, 'message': 'All fields are required!'})
 
-        # Check if email already exists
-        if users_collection.find_one({'email': email}):
-            return jsonify({'success': False, 'message': 'Email already exists! Please log in.'})
+    if users_collection.find_one({'email': email}):
+        return jsonify({'success': False, 'message': 'Email already exists! Please log in.'})
 
-        # Retrieve OTP data for the email
-        otp_data = otp_collection.find_one({"email": email})
+    users_collection.insert_one({
+        'username': username,
+        'mobile': mobile,
+        'email': email,
+        'password': password  # Store hashed passwords in production!
+    })
 
-        # Check if otp_data is None (OTP not found for the email)
-        if otp_data is None:
-            return jsonify({'success': False, 'message': 'No OTP found for this email. Please request a new OTP.'})
-
-        # Ensure the OTP is correct
-        if otp_data["otp"] != int(otp):
-            return jsonify({'success': False, 'message': 'Invalid OTP.'})
-
-        # Delete the OTP document from the collection
-        otp_collection.delete_one({"email": email})
-
-        # Insert new user into MongoDB
-        users_collection.insert_one({
-            'username': username,
-            'mobile': mobile,
-            'guardianNum' : guardianNum,
-            'email': email,
-            'password': password  # Plain text for now as requested
-        })
-
-        return jsonify({'success': True, 'message': 'Registration successful! Please log in.'})
-
-    return render_template('registration.html')
+    return jsonify({'success': True, 'message': 'Registration successful!'})
 
 @app.route('/forget_password', methods=['GET', 'POST'])
 def forget_password():
