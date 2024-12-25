@@ -61,8 +61,8 @@ def crime_indicator(crime_count):
 df2['indicator'] = df2['total_crime_against_women'].apply(crime_indicator)
 
 # MongoDB connection
-client = MongoClient("mongodb+srv://rh0665971:q7DFaWad4RKQRiWg@cluster0.gusg4.mongodb.net/?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE")
-db = client['swaraksha']
+client = MongoClient("mongodb+srv://niranjanniranjann6:<db_password>@cluster0.dw1td.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+db = client['new_train']
 users_collection = db['users']
 otp_collection = db['otp_storage']  
 messages_collection = db['messages']
