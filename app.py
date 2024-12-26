@@ -381,28 +381,36 @@ def send_otp(email):
 
 
 # Route for user registration
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    data = request.json  # Expecting JSON data
-    username = data.get('username')
-    mobile = data.get('mobile')
-    email = data.get('email')
-    password = data.get('password')
+    if request.method == 'POST':
+        username = request.form.get('username')
+        mobile = request.form.get('mobile')
+        email = request.form.get('email')
+        password = request.form.get('password')
 
-    if not username or not email or not password:
-        return jsonify({'success': False, 'message': 'All fields are required!'})
+        if not username or not email or not password:
+            flash('All fields are required!')
+            return redirect('register')
 
-    if users_collection.find_one({'email': email}):
-        return jsonify({'success': False, 'message': 'Email already exists! Please log in.'})
+        # Check if email already exists
+        if users_collection.find_one({'email': email}):
+            flash('Email already exists! Please log in.')
+            return jsonify({'success': True, 'message': 'Email already exists! Please log in.'})
 
-    users_collection.insert_one({
-        'username': username,
-        'mobile': mobile,
-        'email': email,
-        'password': password  # Store hashed passwords in production!
-    })
+        # Insert new user into MongoDB
+        users_collection.insert_one({
+            'username': username,
+            'mobile': mobile,
+            'email': email,
+            'password': password  # Plain text for now as requested
+        })
 
-    return jsonify({'success': True, 'message': 'Registration successful!'})
+        flash('Registration successful! Please log in.')
+        return jsonify({'success': True, 'message': 'Registration successful! Please log in.'})
+
+    return render_template('registration.html')
+
 
 @app.route('/forget_password', methods=['GET', 'POST'])
 def forget_password():
