@@ -597,33 +597,15 @@ def nearest_police_station():
     data = request.get_json()
     latitude = data.get('latitude')
     longitude = data.get('longitude')
-    
-    # Get guardian number from session, defaulting to 'NF' if not set
-    guardianNum = session.get('guardianNum', 'NF')
-    
+
+    # Predict the nearest police station using the trained model
     try:
-        # Predict the nearest police station using the trained model
         nearest_police_station.nearest_station = en.inverse_transform(cls.predict([[latitude, longitude]]))
         contact_number = df1.loc[df1['Police_station_name'].str.contains(nearest_police_station.nearest_station[0], case=False, na=False), 'phone_number'].values[0]
-        
-        # Clean the contact number
-        n = contact_number.replace('-', '') 
-        logger.info(f"police number is {contact_number} and type is {type(contact_number)}")
-        logger.info(f"Guardian number is {guardianNum} and type is {type(guardianNum)}")
-
-        np=nearest_police_station.nearest_station[0]
-
-        station_data = df1[df1['Police_station_name'] == np]
-
-        latitude = station_data['latitude'].values[0]
-        longitude = station_data['longitude'].values[0]
-        # Return the nearest police station details as JSON
+        n = contact_number.replace('-', '')  # Clean number
         return jsonify({
             'police_station': nearest_police_station.nearest_station[0],
-            'contact_number': n,   # Ensure cleaned contact number is returned
-            'guardianNum': guardianNum,
-            'latitude': latitude,
-            'longitude':longitude
+            'contact_number': n  # Ensure you return the cleaned number
         })
     except Exception as e:
         return jsonify({'error': str(e)})
