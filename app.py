@@ -341,7 +341,7 @@ def get_otp():
 
 def send_otp(email):
     otp = random.randint(100000, 999999)  # Generate a 6-digit OTP
-    message = f"Your OTP for Swaraksha registration is: {otp}"
+    message = f"Your OTP for RailConnect registration is: {otp}"
 
     # Email setup
     #sender_email = "rh0665971@gmail.com"
