@@ -173,7 +173,12 @@ def check_seats():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error checking seats.', 'error': str(e)}), 500
 
-
+@app.route('/booked_seats', methods=['GET'])
+def get_booked_seats():
+    # Retrieve all booked seats from the database
+    booked_seats = booked_seats_collection.find()
+    booked_seat_numbers = [seat['seat'] for seat in booked_seats]
+    return jsonify({'bookedSeats': booked_seat_numbers})
 
 
 @app.route('/upload_image', methods=['POST'])
