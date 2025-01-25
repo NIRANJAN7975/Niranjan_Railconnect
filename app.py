@@ -68,6 +68,7 @@ otp_collection = db['otp_storage']
 messages_collection = db['messages']
 reviews = db['reviews']
 App_reviews = db['App_reviews']
+booked_seats_collection=db['ticket_records']
 
 # Setup the uploads folder
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -100,6 +101,79 @@ def predict_gender(interpreter, resized_face):
     # Get the prediction
     output_data = interpreter.get_tensor(output_details[0]['index'])
     return output_data
+
+@app.route('/book', methods=['POST'])
+def book_tickets():
+    if request.method == 'POST':
+        # Retrieve booking data from the request
+        username = request.json.get('username')
+        selected_seats = request.json.get('selectedSeats', [])
+        ticket_number = request.json.get('ticketNumber')
+        amount = request.json.get('amount')
+        booked_date = request.json.get('bookedDate')
+
+        if not username or not selected_seats:
+            return jsonify({'success': False, 'message': 'All fields are required!'})
+
+        # Check if any of the selected seats are already booked
+        booked_seats = booked_seats_collection.find({
+            'seat': {'$in': selected_seats}
+        })
+
+        already_booked = [seat['seat'] for seat in booked_seats]
+        if already_booked:
+            return jsonify({
+                'success': False,
+                'message': f'Some seats are already booked: {", ".join(already_booked)}',
+                'bookedSeats': already_booked
+            })
+
+        # Insert booking data into MongoDB
+        booking_data = [
+            {
+                'username': username,
+                'seat': seat,
+                'ticketNumber': ticket_number,
+                'amount': amount,
+                'bookedDate': booked_date
+            }
+            for seat in selected_seats
+        ]
+
+        # Store each seat in the booked_seats_collection
+        booked_seats_collection.insert_many(booking_data)
+
+        return jsonify({'success': True, 'message': 'Booking successful!', 'ticketNumber': ticket_number})
+
+    return jsonify({'success': False, 'message': 'Invalid request method.'})
+
+@app.route('/check-seats', methods=['POST'])
+def check_seats():
+    try:
+        # Get selected seats from the request body
+        data = request.json
+        selected_seats = data.get("selectedSeats", [])
+
+        if not selected_seats:
+            return jsonify({'success': False, 'message': 'No seats provided for checking.'}), 400
+
+        # Find already booked seats
+        booked_seats = booked_seats_collection.find(
+            {"seat": {"$in": selected_seats}}
+        )
+
+        # Extract booked seat numbers
+        booked_seat_list = [seat['seat'] for seat in booked_seats]
+
+        return jsonify({
+            'success': True,
+            'bookedSeats': booked_seat_list
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Error checking seats.', 'error': str(e)}), 500
+
+
 
 
 @app.route('/upload_image', methods=['POST'])
@@ -424,6 +498,8 @@ def register():
         return jsonify({'success': True, 'message': 'Registration successful! Please log in.'})
 
     return render_template('registration.html')
+
+
 
 @app.route('/forget_password', methods=['GET', 'POST'])
 def forget_password():
