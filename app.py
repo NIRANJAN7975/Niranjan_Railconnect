@@ -422,19 +422,16 @@ def send_otp(email):
     otp = random.randint(100000, 999999)  # Generate a 6-digit OTP
     message = f"Your OTP for RailConnect registration is: {otp}"
 
-    # Email setup
-    #sender_email = "rh0665971@gmail.com"
-    #sender_password = "jgjr aysx ndto bxye" # Ensure this is a Google App password
 
-    sender_email = "swaraksha247@gmail.com"
-    sender_password = "mvvh najj rbee tsfo"
+    sender_email = "railconnect24.7@gmail.com"
+    sender_password = "odbw stpt fegm cbgv"
 
 
     # Create the email message
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = email
-    msg['Subject'] = "OTP for Swaraksha Registration"
+    msg['Subject'] = "OTP for RailConnect Registration"
     msg.attach(MIMEText(message, 'plain'))
 
     try:
