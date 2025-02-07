@@ -121,6 +121,49 @@ def submit_order():
         return jsonify({'success': False, 'message': 'Error processing order.', 'error': str(e)}), 500
 
 
+@app.route('/get-orders', methods=['GET'])
+def get_orders():
+    try:
+        orders = list(orders_collection.find({}, {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "otp": 1, "status": 1}))
+        
+        for order in orders:
+            order["_id"] = str(order["_id"])  # Convert ObjectId to string
+        
+        return jsonify({'success': True, 'orders': orders})
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
+
+# Verify OTP and update status
+@app.route('/verify-otp', methods=['POST'])
+def verify_otp():
+    try:
+        data = request.json
+        order_id = data.get("orderId")
+        entered_otp = data.get("otp")
+
+        if not order_id or not entered_otp:
+            return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
+
+        # Find the order in the database
+        order = orders_collection.find_one({"_id": ObjectId(order_id)})
+
+        if not order:
+            return jsonify({'success': False, 'message': 'Order not found!'}), 404
+
+        # Check if the entered OTP matches the stored OTP
+        if str(order.get("otp")) == str(entered_otp):
+            orders_collection.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "Delivered"}})
+            return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid OTP. Please try again.'}), 400
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
+
+
+
+
+
 
 @app.route('/book', methods=['POST'])
 def book_tickets():
