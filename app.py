@@ -72,6 +72,8 @@ booked_seats_collection=db['ticket_records']
 orders_collection = db['orders']
 
 
+from datetime import datetime
+
 @app.route('/submit-order', methods=['POST'])
 def submit_order():
     try:
@@ -81,9 +83,18 @@ def submit_order():
         order_items = data.get("orderItems", [])
         selected_seats = data.get("selectedSeats", [])  # Get selected seats
         grand_total = data.get("grandTotal")
+        location = data.get("location", {})  # Get user location
+
+        latitude = location.get("latitude")
+        longitude = location.get("longitude")
+        address = location.get("address", "Unknown address")  # Optional address field
+        current_timestamp = datetime.utcnow().isoformat()  # Get current timestamp
 
         if not username or not mobile or not order_items:
             return jsonify({'success': False, 'message': 'Incomplete order details!'}), 400
+
+        # Create SOS message in the required format
+        sos_message = f"Order is placed at this location(address: {address}, Latitude: {latitude}, Longitude: {longitude}, mobile: {mobile}, Timestamp: {current_timestamp}) or Track me in map https://www.google.com/maps?q={latitude},{longitude}"
 
         # Create order record
         order_data = {
@@ -92,16 +103,23 @@ def submit_order():
             "orderItems": order_items,
             "selectedSeats": selected_seats,  # Save selected seats
             "grandTotal": grand_total,
+            "location": {
+                "latitude": latitude,
+                "longitude": longitude,
+                "address": address,
+                "sos_message": sos_message  # Store SOS message
+            },
             "status": "Pending"
         }
 
         # Insert into MongoDB
         order_id = orders_collection.insert_one(order_data).inserted_id
 
-        return jsonify({'success': True, 'message': 'Order placed successfully!', 'orderId': str(order_id)})
+        return jsonify({'success': True, 'message': 'Order placed successfully!', 'orderId': str(order_id), "sosMessage": sos_message})
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error processing order.', 'error': str(e)}), 500
+
 
 
 @app.route('/book', methods=['POST'])
