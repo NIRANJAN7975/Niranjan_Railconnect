@@ -124,19 +124,30 @@ def submit_order():
 
 
 
-@app.route('/get-orders', methods=['GET'])
+@app.route('/get-orders', methods=['POST'])  
 def get_orders():
     try:
-        orders = list(orders_collection.find({}, {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "otp": 1, "status": 1}))
-        
+        data = request.json
+        mobile = data.get("mobile")  # Mobile number from frontend
+
+        if not mobile:
+            return jsonify({'success': False, 'message': 'Mobile number is required!'}), 400
+
+        # Fetch orders for the given mobile number
+        orders = list(orders_collection.find(
+            {"mobile": mobile},
+            {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "otp": 1, "status": 1}
+        ))
+
         for order in orders:
             order["_id"] = str(order["_id"])  # Convert ObjectId to string
-        
+
         return jsonify({'success': True, 'orders': orders})
+
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
 
-# Verify OTP and update status
+# ✅ Verify OTP and update order status
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
     try:
@@ -147,14 +158,15 @@ def verify_otp():
         if not order_id or not entered_otp:
             return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
 
-        # Find the order in the database
+        # Convert order_id to ObjectId and find the order
         order = orders_collection.find_one({"_id": ObjectId(order_id)})
 
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        # Check if the entered OTP matches the stored OTP
+        # ✅ Check if OTP matches
         if str(order.get("otp")) == str(entered_otp):
+            # ✅ Update order status to "Delivered"
             orders_collection.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "Delivered"}})
             return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
         else:
@@ -162,8 +174,6 @@ def verify_otp():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
-
-
 
 
 
