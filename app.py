@@ -69,38 +69,39 @@ messages_collection = db['messages']
 reviews = db['reviews']
 App_reviews = db['App_reviews']
 booked_seats_collection=db['ticket_records']
+orders_collection = db['orders']
 
-# Setup the uploads folder
-app.config['UPLOAD_FOLDER'] = 'uploads'
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Initialize the TensorFlow Lite interpreter for gender prediction
-def initialize_interpreter():
-    interpreter = tf.lite.Interpreter(model_path="my_gender_final2.tflite")
-    interpreter.allocate_tensors()
-    return interpreter
+@app.route('/submit-order', methods=['POST'])
+def submit_order():
+    try:
+        data = request.json
+        username = data.get("username")
+        mobile = data.get("mobile")
+        order_items = data.get("orderItems", [])
+        grand_total = data.get("grandTotal")
 
-# Load Haar Cascade classifier for face detection
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        if not username or not mobile or not order_items:
+            return jsonify({'success': False, 'message': 'Incomplete order details!'}), 400
 
-# Modify the gender prediction code using TensorFlow Lite
-def predict_gender(interpreter, resized_face):
-    # Preprocess the face image
-    test_img = cv2.resize(resized_face, (64, 64))
-    test_img = np.expand_dims(test_img, axis=0).astype(np.float32)
+        # Create order record
+        order_data = {
+            "username": username,
+            "mobile": mobile,
+            "orderItems": order_items,
+            "grandTotal": grand_total,
+            "status": "Pending"
+        }
 
-    # Set the input tensor
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    interpreter.set_tensor(input_details[0]['index'], test_img)
+        # Insert into MongoDB
+        order_id = orders_collection.insert_one(order_data).inserted_id
 
-    # Run the inference
-    interpreter.invoke()
+        return jsonify({'success': True, 'message': 'Order placed successfully!', 'orderId': str(order_id)})
 
-    # Get the prediction
-    output_data = interpreter.get_tensor(output_details[0]['index'])
-    return output_data
+    except Exception as e:
+        return jsonify({'success': False, 'message': 'Error processing order.', 'error': str(e)}), 500
+
+
 
 @app.route('/book', methods=['POST'])
 def book_tickets():
@@ -298,32 +299,6 @@ def send_message():
     logger.info(f"Text message sent by {username}: {data['message']}")
     return jsonify({"status": "Message sent!"})
 
-# Route to send a voice message
-@app.route('/sendVoiceMessage', methods=['POST'])
-def send_voice_message():
-    username = request.form.get('username', 'Guest')
-    if 'voiceMessage' not in request.files:
-        return jsonify({"error": "No voice message provided"}), 400
-
-    voice_file = request.files['voiceMessage']
-    filename = secure_filename(voice_file.filename)
-    filepath = os.path.join('uploads', filename)
-    voice_file.save(filepath)
-
-    # Store the file reference in MongoDB
-    new_message = {
-        "username": username,
-        "type": "audio",
-        "filename": filename
-    }
-    messages_collection.insert_one(new_message)
-    logger.info(f"Voice message sent by {username}: {filename}")
-    return jsonify({"status": "Voice message sent!"})
-
-# Route to serve uploaded audio files
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory('uploads', filename)
 
 # Route to get the username from the session
 @app.route('/getUsername', methods=['GET'])
