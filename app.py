@@ -83,6 +83,7 @@ def submit_order():
         order_items = data.get("orderItems", [])
         selected_seats = data.get("selectedSeats", [])  # Get selected seats
         grand_total = data.get("grandTotal")
+        otp = data.get("otp")  # Get OTP from frontend
         location = data.get("location", {})  # Get user location
 
         latitude = location.get("latitude")
@@ -90,11 +91,11 @@ def submit_order():
         address = location.get("address", "Unknown address")  # Optional address field
         current_timestamp = datetime.utcnow().isoformat()  # Get current timestamp
 
-        if not username or not mobile or not order_items:
+        if not username or not mobile or not order_items or not otp:
             return jsonify({'success': False, 'message': 'Incomplete order details!'}), 400
 
         # Create SOS message in the required format
-        sos_message = f"Order is placed at this location(address: {address}, Latitude: {latitude}, Longitude: {longitude}, mobile: {mobile}, Timestamp: {current_timestamp}) or Track me in map https://www.google.com/maps?q={latitude},{longitude}"
+        sos_message = f"Order is placed at this location (address: {address}, Latitude: {latitude}, Longitude: {longitude}, mobile: {mobile}, Timestamp: {current_timestamp}) or Track me in map https://www.google.com/maps?q={latitude},{longitude}"
 
         # Create order record
         order_data = {
@@ -103,6 +104,7 @@ def submit_order():
             "orderItems": order_items,
             "selectedSeats": selected_seats,  # Save selected seats
             "grandTotal": grand_total,
+            "otp": otp,  # Store OTP in database
             "location": {
                 "latitude": latitude,
                 "longitude": longitude,
@@ -119,6 +121,7 @@ def submit_order():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error processing order.', 'error': str(e)}), 500
+
 
 
 @app.route('/get-orders', methods=['GET'])
