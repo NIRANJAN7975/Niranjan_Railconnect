@@ -153,12 +153,8 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from datetime import datetime
 
-app = Flask(__name__)
 
-# ✅ Connect to MongoDB
-client = MongoClient("mongodb+srv://YOUR_CONNECTION_STRING")
-db = client["YOUR_DATABASE_NAME"]
-orders_collection = db["orders"]
+
 
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
