@@ -149,14 +149,19 @@ def get_orders():
 
 
 
-
-
-@app.route('/verify-otp', methods=['POST'])
+@app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
     try:
-        data = request.json
-        order_id = data.get("orderId")
-        entered_otp = data.get("otp")
+        # ✅ Handle GET request (Query Params)
+        if request.method == 'GET':
+            order_id = request.args.get("orderId")
+            entered_otp = request.args.get("otp")
+
+        # ✅ Handle POST request (JSON Body)
+        elif request.method == 'POST':
+            data = request.json
+            order_id = data.get("orderId")
+            entered_otp = str(data.get("otp"))
 
         if not order_id or not entered_otp:
             return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
@@ -167,26 +172,18 @@ def verify_otp():
         except InvalidId:
             return jsonify({'success': False, 'message': 'Invalid Order ID format!'}), 400
 
-        print("Received Order ID:", order_id)  # Debugging
-        print("Received OTP:", entered_otp)    # Debugging
-
         # ✅ Fetch order from the database
         order = orders_collection.find_one({"_id": order_obj_id})
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        print("Fetched Order from DB:", order)  # Debugging
-
         # ✅ Get stored OTP from the order
-        stored_otp = order.get("otp")
+        stored_otp = str(order.get("otp"))
         if not stored_otp:
             return jsonify({'success': False, 'message': 'No OTP found for this order!'}), 400
 
-        print("Stored OTP in DB:", stored_otp)  # Debugging
-        print("Comparing Entered OTP with Stored OTP:", str(stored_otp) == str(entered_otp))  # Debugging
-
         # ✅ Compare entered OTP with stored OTP
-        if str(stored_otp) == str(entered_otp):
+        if entered_otp == stored_otp:
             # ✅ OTP is correct, update order status to "Delivered"
             update_result = orders_collection.update_one(
                 {"_id": order_obj_id},
@@ -194,16 +191,13 @@ def verify_otp():
             )
 
             if update_result.modified_count == 1:
-                print("Order status updated to Delivered.")  # Debugging
                 return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
             else:
-                print("Order status update failed!")  # Debugging
                 return jsonify({'success': False, 'message': 'Failed to update order status.'}), 500
         else:
             return jsonify({'success': False, 'message': 'Invalid OTP. Please try again.'}), 400
 
     except Exception as e:
-        print("Error verifying OTP:", str(e))  # Debugging
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
 
 @app.route('/book', methods=['POST'])
