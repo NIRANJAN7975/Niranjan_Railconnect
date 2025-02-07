@@ -147,6 +147,19 @@ def get_orders():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
 
+from bson.objectid import ObjectId
+from bson.errors import InvalidId
+from flask import Flask, request, jsonify
+from pymongo import MongoClient
+from datetime import datetime
+
+app = Flask(__name__)
+
+# ✅ Connect to MongoDB
+client = MongoClient("mongodb+srv://YOUR_CONNECTION_STRING")
+db = client["YOUR_DATABASE_NAME"]
+orders_collection = db["orders"]
+
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
     try:
@@ -184,18 +197,24 @@ def verify_otp():
         # ✅ Compare entered OTP with stored OTP
         if str(stored_otp) == str(entered_otp):
             # ✅ OTP is correct, update order status to "Delivered"
-            update_result = orders_collection.update_one({"_id": order_obj_id}, {"$set": {"status": "Delivered"}})
+            update_result = orders_collection.update_one(
+                {"_id": order_obj_id},
+                {"$set": {"status": "Delivered"}}
+            )
 
             if update_result.modified_count == 1:
                 print("Order status updated to Delivered.")  # Debugging
                 return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
             else:
+                print("Order status update failed!")  # Debugging
                 return jsonify({'success': False, 'message': 'Failed to update order status.'}), 500
         else:
             return jsonify({'success': False, 'message': 'Invalid OTP. Please try again.'}), 400
 
     except Exception as e:
+        print("Error verifying OTP:", str(e))  # Debugging
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
+
 @app.route('/book', methods=['POST'])
 def book_tickets():
     if request.method == 'POST':
@@ -240,6 +259,7 @@ def book_tickets():
         return jsonify({'success': True, 'message': 'Booking successful!', 'ticketNumber': ticket_number})
 
     return jsonify({'success': False, 'message': 'Invalid request method.'})
+    
 
 @app.route('/check-seats', methods=['POST'])
 def check_seats():
