@@ -72,7 +72,7 @@ booked_seats_collection=db['ticket_records']
 orders_collection = db['orders']
 
 
-from datetime import datetime
+
 
 @app.route('/submit-order', methods=['POST'])
 def submit_order():
@@ -147,11 +147,6 @@ def get_orders():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
 
-from bson.objectid import ObjectId
-from bson.errors import InvalidId
-from flask import Flask, request, jsonify
-from pymongo import MongoClient
-from datetime import datetime
 
 
 
