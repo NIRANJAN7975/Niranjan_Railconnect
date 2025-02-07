@@ -147,7 +147,6 @@ def get_orders():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
 
-# ✅ Verify OTP and update order status
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
     try:
@@ -158,25 +157,35 @@ def verify_otp():
         if not order_id or not entered_otp:
             return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
 
-        # Convert order_id to ObjectId and find the order
-        order = orders_collection.find_one({"_id": ObjectId(order_id)})
+        # ✅ Validate ObjectId
+        try:
+            order_obj_id = ObjectId(order_id)
+        except InvalidId:
+            return jsonify({'success': False, 'message': 'Invalid Order ID format!'}), 400
+
+        # ✅ Fetch order from the database
+        order = orders_collection.find_one({"_id": order_obj_id})
 
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        # ✅ Check if OTP matches
-        if str(order.get("otp")) == str(entered_otp):
-            # ✅ Update order status to "Delivered"
-            orders_collection.update_one({"_id": ObjectId(order_id)}, {"$set": {"status": "Delivered"}})
+        print("Fetched Order:", order)  # Debugging
+
+        # ✅ Get stored OTP from the order
+        stored_otp = order.get("otp")
+        if not stored_otp:
+            return jsonify({'success': False, 'message': 'No OTP found for this order!'}), 400
+
+        # ✅ Compare entered OTP with stored OTP
+        if str(stored_otp) == str(entered_otp):
+            # ✅ OTP is correct, update order status to "Delivered"
+            orders_collection.update_one({"_id": order_obj_id}, {"$set": {"status": "Delivered"}})
             return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
         else:
             return jsonify({'success': False, 'message': 'Invalid OTP. Please try again.'}), 400
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
-
-
-
 
 @app.route('/book', methods=['POST'])
 def book_tickets():
