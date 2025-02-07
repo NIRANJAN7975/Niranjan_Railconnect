@@ -178,16 +178,19 @@ def check_seats():
 @app.route('/booked_seats', methods=['GET'])
 def get_booked_seats():
     try:
-        # Retrieve all booked seats from MongoDB
-        booked_seats_cursor = booked_seats_collection.find({}, {"_id": 0, "seat": 1})
-        
-        # Convert cursor to list of seat numbers
+        username = request.args.get('username')  # Get username from query parameters
+        if not username:
+            return jsonify({'success': False, 'message': 'Username is required!'}), 400
+
+        # Retrieve only booked seats for the given username
+        booked_seats_cursor = booked_seats_collection.find({"username": username}, {"_id": 0, "seat": 1})
         booked_seat_numbers = [seat['seat'] for seat in booked_seats_cursor]
 
         return jsonify({'success': True, 'bookedSeats': booked_seat_numbers})
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error retrieving booked seats.', 'error': str(e)}), 500
+
 
 
 
