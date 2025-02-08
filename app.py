@@ -24,7 +24,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import pytz
-
+from bson import ObjectId
 
 
 # Initialize the app and setup CORS
@@ -148,54 +148,46 @@ def get_orders():
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
         
 
-@app.route('/verify-otp', methods=['GET', 'POST'])
+@app.route('/verify-otp', methods=['POST'])
 def verify_otp():
     try:
-        if request.method == 'GET':
-            order_id = request.args.get("orderId")
-            entered_otp = request.args.get("otp")
-        elif request.method == 'POST':
-            data = request.json
-            order_id = data.get("orderId")
-            entered_otp = str(data.get("otp"))
+        data = request.json
+        order_id = data.get("orderId")
+        entered_otp = str(data.get("otp"))  # Convert OTP to string
 
         if not order_id or not entered_otp:
             return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
 
+        # Validate ObjectId
         try:
             order_obj_id = ObjectId(order_id)
-        except InvalidId:
+        except Exception:
             return jsonify({'success': False, 'message': 'Invalid Order ID format!'}), 400
 
-        # ✅ Fetch order and print for debugging
+        # Fetch order from the database
         order = orders_collection.find_one({"_id": order_obj_id})
-        print("ORDER FETCHED FROM DB:", order)  # ✅ DEBUG
-
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        # ✅ Ensure OTP is retrieved correctly
+        # Get stored OTP as a string
         stored_otp = str(order.get("otp", ""))
         if not stored_otp:
             return jsonify({'success': False, 'message': 'No OTP found for this order!'}), 400
 
-        # ✅ Compare entered OTP with stored OTP
+        # Compare entered OTP with stored OTP
         if entered_otp == stored_otp:
-            update_result = orders_collection.update_one(
-                {"_id": order_obj_id},
-                {"$set": {"status": "Delivered"}}
-            )
+            # ✅ DELETE order from database
+            delete_result = orders_collection.delete_one({"_id": order_obj_id})
 
-            if update_result.modified_count == 1:
-                return jsonify({'success': True, 'message': 'OTP verified! Order status updated to Delivered.'})
+            if delete_result.deleted_count == 1:
+                return jsonify({'success': True, 'message': 'OTP verified! Order has been deleted.'})
             else:
-                return jsonify({'success': False, 'message': 'Failed to update order status.'}), 500
+                return jsonify({'success': False, 'message': 'Failed to delete order.'}), 500
         else:
             return jsonify({'success': False, 'message': 'Invalid OTP. Please try again.'}), 400
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
-
 
                
 
