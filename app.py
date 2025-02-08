@@ -147,17 +147,12 @@ def get_orders():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
 
-
-
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
     try:
-        # ✅ Handle GET request (Query Params)
         if request.method == 'GET':
             order_id = request.args.get("orderId")
             entered_otp = request.args.get("otp")
-
-        # ✅ Handle POST request (JSON Body)
         elif request.method == 'POST':
             data = request.json
             order_id = data.get("orderId")
@@ -177,14 +172,13 @@ def verify_otp():
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        # ✅ Get stored OTP from the order
-        stored_otp = str(order.get("otp"))
+        # ✅ Get stored OTP as a string
+        stored_otp = str(order.get("otp", ""))
         if not stored_otp:
             return jsonify({'success': False, 'message': 'No OTP found for this order!'}), 400
 
         # ✅ Compare entered OTP with stored OTP
         if entered_otp == stored_otp:
-            # ✅ OTP is correct, update order status to "Delivered"
             update_result = orders_collection.update_one(
                 {"_id": order_obj_id},
                 {"$set": {"status": "Delivered"}}
@@ -199,6 +193,10 @@ def verify_otp():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
+         
+
+               
+
 
 @app.route('/book', methods=['POST'])
 def book_tickets():
