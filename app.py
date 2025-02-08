@@ -139,19 +139,23 @@ def get_orders():
             {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}  
         ))
 
-        # Ensure orderItems is always an array
+        # Ensure orderItems is always an array and rename itemName -> name
         for order in orders:
             order["_id"] = str(order["_id"])  # Convert ObjectId to string
-            order["orderItems"] = order.get("orderItems", [])  # Ensure orderItems is a list
+            order["orderItems"] = order.get("orderItems", [])
 
-        print("\nFetched Orders:")
-        for order in orders:
-            print(f"Order ID: {order['_id']}, Order Items: {order['orderItems']}")  # ✅ Debugging log
+            # ✅ Rename "itemName" to "name"
+            for item in order["orderItems"]:
+                item["name"] = item.pop("itemName", "Unknown Item")
+
+        print("Fetched Orders:", orders)  # ✅ Debugging log
 
         return jsonify({'success': True, 'orders': orders})
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
+
+
 
 
 @app.route('/verify-otp', methods=['POST'])
