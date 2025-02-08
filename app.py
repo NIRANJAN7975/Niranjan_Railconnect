@@ -274,6 +274,7 @@ def check_seats():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error checking seats.', 'error': str(e)}), 500
 
+
 @app.route('/booked_seats', methods=['GET'])
 def get_booked_seats():
     try:
@@ -283,7 +284,7 @@ def get_booked_seats():
         query = {"username": username} if username else {}
 
         booked_seats_cursor = booked_seats_collection.find(query, {"_id": 0, "seat": 1})
-        booked_seat_numbers = [seat['seat'] for seat in booked_seats_cursor]
+        booked_seat_numbers = [seat['seat'] for seat in booked_seats_cursor if 'seat' in seat]  # ✅ Ensure valid data
 
         print("Booked Seats:", booked_seat_numbers)  # ✅ Debugging log
 
@@ -291,6 +292,7 @@ def get_booked_seats():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error retrieving booked seats.', 'error': str(e)}), 500
+
 
 
 
