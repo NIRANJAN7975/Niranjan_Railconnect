@@ -139,16 +139,18 @@ def get_orders():
             {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}  
         ))
 
-        # Ensure orderItems is always an array
+        # Ensure orderItems is always an array and log it for debugging
         for order in orders:
             order["_id"] = str(order["_id"])  # Convert ObjectId to string
-            order["orderItems"] = order.get("orderItems", [])  # Set default empty list if missing
+            order["orderItems"] = order.get("orderItems", [])  # Ensure orderItems is a list
+
+        print("Fetched Orders:", orders)  # Debugging log
 
         return jsonify({'success': True, 'orders': orders})
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
-        
+
 
 @app.route('/verify-otp', methods=['POST'])
 def verify_otp():
