@@ -146,6 +146,7 @@ def get_orders():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
+        
 
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
@@ -161,18 +162,19 @@ def verify_otp():
         if not order_id or not entered_otp:
             return jsonify({'success': False, 'message': 'Order ID and OTP are required!'}), 400
 
-        # ✅ Validate ObjectId
         try:
             order_obj_id = ObjectId(order_id)
         except InvalidId:
             return jsonify({'success': False, 'message': 'Invalid Order ID format!'}), 400
 
-        # ✅ Fetch order from the database
+        # ✅ Fetch order and print for debugging
         order = orders_collection.find_one({"_id": order_obj_id})
+        print("ORDER FETCHED FROM DB:", order)  # ✅ DEBUG
+
         if not order:
             return jsonify({'success': False, 'message': 'Order not found!'}), 404
 
-        # ✅ Get stored OTP as a string
+        # ✅ Ensure OTP is retrieved correctly
         stored_otp = str(order.get("otp", ""))
         if not stored_otp:
             return jsonify({'success': False, 'message': 'No OTP found for this order!'}), 400
@@ -193,7 +195,7 @@ def verify_otp():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error verifying OTP.', 'error': str(e)}), 500
-         
+
 
                
 
