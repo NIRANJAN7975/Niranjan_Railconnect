@@ -133,10 +133,10 @@ def get_orders():
         if not mobile:
             return jsonify({'success': False, 'message': 'Mobile number is required!'}), 400
 
-        # Fetch orders for the given mobile number (EXCLUDING OTP)
+        # Fetch orders for the given mobile number (INCLUDING ORDER ITEMS)
         orders = list(orders_collection.find(
             {"mobile": mobile},
-            {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1}  
+            {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}  
         ))
 
         for order in orders:
@@ -146,6 +146,7 @@ def get_orders():
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
+
         
 
 @app.route('/verify-otp', methods=['POST'])
