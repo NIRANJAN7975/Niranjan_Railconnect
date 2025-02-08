@@ -139,12 +139,14 @@ def get_orders():
             {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}  
         ))
 
-        # Ensure orderItems is always an array and log it for debugging
+        # Ensure orderItems is always an array
         for order in orders:
             order["_id"] = str(order["_id"])  # Convert ObjectId to string
             order["orderItems"] = order.get("orderItems", [])  # Ensure orderItems is a list
 
-        print("Fetched Orders:", orders)  # Debugging log
+        print("\nFetched Orders:")
+        for order in orders:
+            print(f"Order ID: {order['_id']}, Order Items: {order['orderItems']}")  # ✅ Debugging log
 
         return jsonify({'success': True, 'orders': orders})
 
