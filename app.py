@@ -81,40 +81,47 @@ def submit_order():
         username = data.get("username")
         mobile = data.get("mobile")
         order_items = data.get("orderItems", [])
-        selected_seats = data.get("selectedSeats", [])  # Get selected seats
+        selected_seats = data.get("selectedSeats", [])
         grand_total = data.get("grandTotal")
-        otp = data.get("otp")  # Get OTP from frontend
-        location = data.get("location", {})  # Get user location
+        otp = data.get("otp")
+        location = data.get("location", {})
 
         latitude = location.get("latitude")
         longitude = location.get("longitude")
-        address = location.get("address", "Unknown address")  # Optional address field
-        current_timestamp = datetime.utcnow().isoformat()  # Get current timestamp
+        address = location.get("address", "Unknown address")
+        current_timestamp = datetime.utcnow().isoformat()
 
         if not username or not mobile or not order_items or not otp:
             return jsonify({'success': False, 'message': 'Incomplete order details!'}), 400
 
-        # Create SOS message in the required format
+        # ✅ Ensure orderItems use "itemName" instead of "name"
+        formatted_items = [
+            {
+                "itemName": item.get("itemName", "Unknown Item"),
+                "price": item.get("price", 0),
+                "quantity": item.get("quantity", 1)
+            }
+            for item in order_items
+        ]
+
         sos_message = f"Order is placed at this location (address: {address}, Latitude: {latitude}, Longitude: {longitude}, mobile: {mobile}, Timestamp: {current_timestamp}) or Track me in map https://www.google.com/maps?q={latitude},{longitude}"
 
-        # Create order record
         order_data = {
             "username": username,
             "mobile": mobile,
-            "orderItems": order_items,
-            "selectedSeats": selected_seats,  # Save selected seats
+            "orderItems": formatted_items,
+            "selectedSeats": selected_seats,
             "grandTotal": grand_total,
-            "otp": otp,  # Store OTP in database
+            "otp": otp,
             "location": {
                 "latitude": latitude,
                 "longitude": longitude,
                 "address": address,
-                "sos_message": sos_message  # Store SOS message
+                "sos_message": sos_message
             },
             "status": "Pending"
         }
 
-        # Insert into MongoDB
         order_id = orders_collection.insert_one(order_data).inserted_id
 
         return jsonify({'success': True, 'message': 'Order placed successfully!', 'orderId': str(order_id), "sosMessage": sos_message})
@@ -128,7 +135,7 @@ def submit_order():
 def get_orders():
     try:
         data = request.json
-        mobile = data.get("mobile")  # Get mobile from frontend
+        mobile = data.get("mobile")
 
         if not mobile:
             return jsonify({'success': False, 'message': 'Mobile number is required!'}), 400
@@ -136,25 +143,20 @@ def get_orders():
         # Fetch orders including orderItems
         orders = list(orders_collection.find(
             {"mobile": mobile},
-            {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}  
+            {"_id": 1, "username": 1, "mobile": 1, "grandTotal": 1, "status": 1, "orderItems": 1}
         ))
 
-        # Ensure orderItems is always an array and rename itemName -> name
+        # Ensure orderItems is always an array and keep "itemName" as it is
         for order in orders:
             order["_id"] = str(order["_id"])  # Convert ObjectId to string
             order["orderItems"] = order.get("orderItems", [])
 
-            # ✅ Rename "itemName" to "name"
-            for item in order["orderItems"]:
-                item["name"] = item.pop("itemName", "Unknown Item")
-
-        print("Fetched Orders:", orders)  # ✅ Debugging log
+        print("Fetched Orders:", orders)
 
         return jsonify({'success': True, 'orders': orders})
 
     except Exception as e:
         return jsonify({'success': False, 'message': 'Error fetching orders.', 'error': str(e)}), 500
-
 
 
 
