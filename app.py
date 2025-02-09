@@ -533,18 +533,18 @@ def forget_password():
 
 def fsend_otp(email):
     otp = random.randint(100000, 999999)  # Generate a 6-digit OTP
-    message = f"Your OTP for Swaraksha registration is: {otp}"
+    message = f"Your new OTP for RailConnect registration is: {otp}"
 
     # Email setup
-    sender_email = "swaraksha247@gmail.com"
-    sender_password = "mvvh najj rbee tsfo"
+    sender_email = "railconnect24.7@gmail.com"
+    sender_password = "odbw stpt fegm cbgv"
     # Ensure this is a Google App password
 
     # Create the email message
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = email
-    msg['Subject'] = "OTP for password update in Swaraksha"
+    msg['Subject'] = "OTP for password update in RailConnect"
     msg.attach(MIMEText(message, 'plain'))
 
     try:
